@@ -126,6 +126,30 @@ public class ExpenseRepository {
         return read;
     }
 
+    public List<Expense> getExpenseByDate(int year, int month) {
+        var read = new ArrayList<Expense>();
+
+        try (var conn = DatabaseConnection.getConnection();
+             var ps = conn.prepareStatement("""
+                         SELECT * FROM expenses
+                         WHERE EXTRACT(YEAR FROM expense_date) = ?
+                         AND EXTRACT(MONTH FROM expense_date) = ?
+                         ORDER BY expense_id ASC""")) {
+
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) read.add(map(rs));
+            }
+
+        } catch (SQLException e) {
+            System.err.printf(e.getMessage());
+        }
+
+        return read;
+    }
+
     public boolean existsById(long id) {
         String checkExistence = "SELECT 1 FROM expenses WHERE expense_id = ?";
 

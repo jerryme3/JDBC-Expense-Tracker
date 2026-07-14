@@ -115,6 +115,7 @@ public class ExpenseAuthenticator {
         return (year % 4 == 0 && year % 100 != 0) || (year % 4 == 0 && year % 400 == 0);
     }
 
-    public static void main(String[] args) {
+    public static boolean hasSpecialChar(String input) {
+        return input.chars().mapToObj(i -> (char) i).anyMatch(ch -> !Character.isDigit(ch) && !Character.isLetter(ch) && !Character.isWhitespace(ch));
     }
 }

@@ -1,5 +1,6 @@
 package com.jerme.expensetracker;
 
+import com.jerme.expensetracker.filecreator.ExpenseFileCreator;
 import com.jerme.expensetracker.models.Expense;
 import com.jerme.expensetracker.repository.ExpenseRepository;
 import com.jerme.expensetracker.services.ExpenseRepositoryService;
@@ -54,6 +55,9 @@ public class App {
             case 2 -> updateConsole();
             case 3 -> delete();
             case 4 -> printAllExpenses();
+            case 5 -> printAllExpenseByDate();
+            case 6 -> createFileForAllExpenses();
+            case 7 -> createFileForSpecificTime();
             case 8 -> exit();
             default -> System.out.println("Input " + c + " cannot be resolved!");
         }
@@ -365,7 +369,7 @@ public class App {
         String dayOfMonth;
 
         System.out.println("\nEnter \"break\" to exit.");
-        System.out.println("Enter \"get_it\" to get the input already, and start filtering. \nFor example, you \"get it\" from year, you'll get the filtered result that came from that year.");
+        System.out.println("Enter \"get_it\" to get the input already, and start filtering. \nFor example, you \"get_it\" from month, you'll get the filtered result that came from that month \nfrom indicated year.");
 
         do {
             System.out.print("Enter year here: ");
@@ -376,6 +380,35 @@ public class App {
             else if (!ExpenseAuthenticator.isProperYear(year)) ERP.printYearError(year);
 
         } while (!ExpenseAuthenticator.isProperYear(year));
+
+        do {
+            System.out.print("Enter month here: ");
+            month = IN.nextLine();
+
+            if (wantBreak(month)) return;
+            else if (wantGet(month)) {
+                print(EXPENSE_REPOSITORY.getExpenseByDate(Integer.parseInt(year)));
+                return;
+            }
+            else if (!ExpenseAuthenticator.isProperMonth(year, month)) ERP.printMonthError(year, month);
+
+        } while (!ExpenseAuthenticator.isProperMonth(year, month));
+
+        do {
+            System.out.print("Enter day of the month here: ");
+            dayOfMonth = IN.nextLine();
+
+            if (wantBreak(dayOfMonth)) return;
+            else if (wantGet(dayOfMonth)) {
+                print(EXPENSE_REPOSITORY.getExpenseByDate(Integer.parseInt(year), Integer.parseInt(month)));
+                return;
+            } else if (!ExpenseAuthenticator.isProperDayFromAMonth(year, month, dayOfMonth)) ERP.printDayError(year, month, dayOfMonth);
+
+        } while (!ExpenseAuthenticator.isProperDayFromAMonth(year, month, dayOfMonth));
+
+        String date = year + "-" + (month.length() == 1 ? "0" + month : month) + "-" + (dayOfMonth.length() == 1 ? "0" + dayOfMonth : dayOfMonth);
+
+        print(EXPENSE_REPOSITORY.getExpenseByDate(LocalDate.parse(date)));
 
     }
 
@@ -403,12 +436,128 @@ public class App {
 
         System.out.println("==========================================================================================================");
     }
+
+    public void createFileForAllExpenses() {
+        boolean fileCreated = ExpenseFileCreator.createExpenseForAll(EXPENSE_REPOSITORY.getExpenses());
+
+        System.out.println(fileCreated ? "File has been created successfully!" : "An unexpected error occurred.");
+    }
+
+    public void createFileForSpecificTime() {
+        String year;
+        String month;
+        String dayOfMonth;
+
+        System.out.println("\nEnter \"break\" to exit.");
+        System.out.println("Enter \"create\" to get the file already, and start filtering. \nFor example, you \"create\" from month, you'll get the filtered file that came from that first input, which is the year.");
+
+        do {
+            System.out.print("Enter year here: ");
+            year = IN.nextLine();
+
+            if (wantBreak(year)) return;
+            else if (wantCreate(year)) System.out.println("\"create\" can only be applied to the sections lower than year.");
+            else if (!ExpenseAuthenticator.isProperYear(year)) ERP.printYearError(year);
+
+        } while (!ExpenseAuthenticator.isProperYear(year));
+
+        do {
+            System.out.print("Enter month here: ");
+            month = IN.nextLine();
+
+            if (wantBreak(month)) return;
+            else if (wantCreate(month)) {
+                var fetched = EXPENSE_REPOSITORY.getExpenseByDate(Integer.parseInt(year));
+
+                if (fetched.isEmpty()) {
+                    System.out.println("You have no expenses during this time.");
+                    return;
+                }
+
+                String fileName;
+
+                System.out.println("Note: Don't add the file extension in the end of the file name. It is inferred by the system.");
+
+                do {
+                    System.out.print("Enter file name here: ");
+                    fileName = IN.nextLine();
+
+                    if (wantBreak(fileName)) return;
+                    else if (fileName.isBlank() || ExpenseAuthenticator.hasSpecialChar(fileName)) System.out.println("Invalid file name format.");
+
+                } while (fileName.isBlank() || ExpenseAuthenticator.hasSpecialChar(fileName));
+
+                boolean created = ExpenseFileCreator.createFileForSpecificTimeframe(fetched, fileName);
+                System.out.println(created ? "File has been created successfully!" : "An unexpected error occurred.");
+                return;
+            }
+            else if (!ExpenseAuthenticator.isProperMonth(year, month)) ERP.printMonthError(year, month);
+
+        } while (!ExpenseAuthenticator.isProperMonth(year, month));
+
+        do {
+            System.out.print("Enter day of the month here: ");
+            dayOfMonth = IN.nextLine();
+
+            if (wantBreak(dayOfMonth)) return;
+            else if (wantCreate(dayOfMonth)) {
+                var fetched = EXPENSE_REPOSITORY.getExpenseByDate(Integer.parseInt(year), Integer.parseInt(month));
+
+                if (fetched.isEmpty()) {
+                    System.out.println("You have no expenses during this time.");
+                    return;
+                }
+
+                String fileName;
+
+                System.out.println("Note: Don't add the file extension in the end of the file name. It is inferred by the system.");
+
+                do {
+                    System.out.print("Enter file name here: ");
+                    fileName = IN.nextLine();
+
+                    if (wantBreak(fileName)) return;
+                    else if (fileName.isBlank() || ExpenseAuthenticator.hasSpecialChar(fileName)) System.out.println("Invalid file name format.");
+
+                } while (fileName.isBlank() || ExpenseAuthenticator.hasSpecialChar(fileName));
+
+                boolean created = ExpenseFileCreator.createFileForSpecificTimeframe(fetched, fileName);
+
+                System.out.println(created ? "File has been created successfully!" : "An unexpected error occurred.");
+                return;
+            } else if (!ExpenseAuthenticator.isProperDayFromAMonth(year, month, dayOfMonth)) ERP.printDayError(year, month, dayOfMonth);
+
+        } while (!ExpenseAuthenticator.isProperDayFromAMonth(year, month, dayOfMonth));
+
+        String fileName;
+
+        System.out.println("Note: Don't add the file extension in the end of the file name. It is inferred by the system.");
+
+        do {
+            System.out.print("Enter file name here: ");
+            fileName = IN.nextLine();
+
+            if (wantBreak(fileName)) return;
+            else if (fileName.isBlank() || ExpenseAuthenticator.hasSpecialChar(fileName)) System.out.println("Invalid file name format.");
+
+        } while (fileName.isBlank() || ExpenseAuthenticator.hasSpecialChar(fileName));
+
+        String date = year + "-" + (month.length() == 1 ? "0" + month : month) + "-" + (dayOfMonth.length() == 1 ? "0" + dayOfMonth : dayOfMonth);
+        boolean fileCreated = ExpenseFileCreator.createFileForSpecificTimeframe(EXPENSE_REPOSITORY.getExpenseByDate(LocalDate.parse(date)), fileName);
+
+        System.out.println(fileCreated ? "File has been created successfully!" : "An unexpected error occurred.");
+    }
+
     private static boolean wantBreak(String breakState) {
         return breakState.equalsIgnoreCase("break");
     }
 
     private static boolean wantGet(String getState) {
         return getState.equalsIgnoreCase("get_it");
+    }
+
+    private static boolean wantCreate(String createState) {
+        return createState.equalsIgnoreCase("create");
     }
 
     public void exit() {
