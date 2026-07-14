@@ -1,0 +1,5 @@
+.env
+.idea
+.mvn
+target
+src/test
