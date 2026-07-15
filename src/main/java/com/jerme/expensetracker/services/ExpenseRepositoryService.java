@@ -36,8 +36,21 @@ public class ExpenseRepositoryService {
             return;
         }
 
-        if (!amount.matches("\\d+") || !amount.matches("\\d+\\.\\d+")) {
+        if (!amount.matches("\\d{1,10}") && !amount.matches("\\d{1,10}\\.\\d+")) {
             System.out.println("Expense amount should be in proper amount or decimal format.");
+            return;
+        }
+
+        if (!amount.contains(".")) {
+            long val = Long.parseLong(amount);
+
+            if (val > Integer.MAX_VALUE) System.out.println("Max value for a double has been reached.");
+
+        } else {
+            double val = Double.parseDouble(amount);
+
+            if (val > Double.MAX_VALUE) System.out.println("Max value for a double has been reached.");
+
         }
     }
 
@@ -47,9 +60,15 @@ public class ExpenseRepositoryService {
             return;
         }
 
-        if (!integer.matches("\\d+")) {
+        if (!integer.matches("\\d{1,10}")) {
             System.out.println(whatToCall + " should be in proper integer format.");
+            return;
         }
+
+        long parsed = Long.parseLong(integer);
+
+        if (parsed > Integer.MAX_VALUE) System.out.println("Max value for an integer has been reached.");
+
     }
 
     public void printYearError(String year) {
@@ -58,7 +77,7 @@ public class ExpenseRepositoryService {
             return;
         }
 
-        if (!year.matches("\\d+")) {
+        if (!year.matches("\\d{4}")) {
             System.out.println("Year should be in proper year format.");
             return;
         }
@@ -75,9 +94,9 @@ public class ExpenseRepositoryService {
 
         int intYear = Integer.parseInt(year);
 
-        if (intYear < 1900) {
+        if (intYear < 1901) {
             System.out.println("Cannot accept year input that is too old!");
-        } else if (intYear > 2026) {
+        } else if (intYear > LocalDate.now().getYear()) {
             System.out.println("Cannot accept year input that from the future!");
         }
     }
@@ -113,7 +132,7 @@ public class ExpenseRepositoryService {
             return;
         }
 
-        if (!ExpenseAuthenticator.isProperMonth(month)) {
+        if (!ExpenseAuthenticator.isProperMonth(year, month)) {
             printMonthError(year, month);
             return;
         }

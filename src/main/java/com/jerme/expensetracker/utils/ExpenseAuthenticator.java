@@ -5,11 +5,11 @@ import java.time.LocalDate;
 public class ExpenseAuthenticator {
 
     public static boolean isProperName(String name) {
-        return name != null && !name.isBlank() && name.length() < 20;
+        return name != null && !name.isBlank() && name.length() <= 20;
     }
 
     public static boolean isProperDesc(String desc) {
-        return desc != null && !desc.isBlank() && desc.length() < 40;
+        return desc != null && !desc.isBlank() && desc.length() <= 40;
     }
 
     /**
@@ -52,7 +52,7 @@ public class ExpenseAuthenticator {
 
         int intYear = Integer.parseInt(year);
 
-        if (!isProperInteger(month)) return false;
+        if (!month.matches("\\d{1,2}")) return false;
 
         int intMonth = Integer.parseInt(month);
 
@@ -102,13 +102,20 @@ public class ExpenseAuthenticator {
     public static boolean isProperInteger(String integer) {
         if (integer == null || integer.isBlank()) return false;
 
-        return integer.matches("\\d+");
+        if (!integer.matches("\\d{1,10}")) return false;
+
+        long integer1 = Long.parseLong(integer);
+
+        return integer1 <= (long) Integer.MAX_VALUE;
     }
 
     public static boolean isProperDouble(String decimal) {
         if (decimal == null || decimal.isBlank()) return false;
 
-        return decimal.matches("\\d+\\.\\d+") || isProperInteger(decimal);
+        if (!decimal.matches("\\d{1,10}\\.\\d+") && !isProperInteger(decimal)) return false;
+
+        return Double.parseDouble(decimal) <= Double.MAX_VALUE;
+
     }
 
     public static boolean isLeapYear(int year) {
@@ -116,6 +123,9 @@ public class ExpenseAuthenticator {
     }
 
     public static boolean hasSpecialChar(String input) {
-        return input.chars().mapToObj(i -> (char) i).anyMatch(ch -> !Character.isDigit(ch) && !Character.isLetter(ch) && !Character.isWhitespace(ch));
+        return input
+                .chars()
+                .mapToObj(i -> (char) i)
+                .anyMatch(ch -> !Character.isDigit(ch) && !Character.isLetter(ch) && !Character.isWhitespace(ch));
     }
 }

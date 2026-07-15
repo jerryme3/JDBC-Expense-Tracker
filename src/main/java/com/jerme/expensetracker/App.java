@@ -37,7 +37,9 @@ public class App {
         System.out.println("5. View expenses within specific timeframe");
         System.out.println("6. Create a file for the list of all expenses");
         System.out.println("7. Create a file for the list of expenses within a specific timeframe");
-        System.out.println("8. Exit");
+        System.out.println("8. View all of your spending summary");
+        System.out.println("9. View all of your spending summary in a specific timeframe");
+        System.out.println("10. Exit");
         System.out.print("Enter choice here: ");
     }
 
@@ -58,7 +60,7 @@ public class App {
             case 5 -> printAllExpenseByDate();
             case 6 -> createFileForAllExpenses();
             case 7 -> createFileForSpecificTime();
-            case 8 -> exit();
+            case 10 -> exit();
             default -> System.out.println("Input " + c + " cannot be resolved!");
         }
     }

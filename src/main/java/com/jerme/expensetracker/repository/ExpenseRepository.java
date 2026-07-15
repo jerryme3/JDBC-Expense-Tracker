@@ -13,7 +13,6 @@ import java.util.Optional;
 
 public class ExpenseRepository {
 
-    //TODO make the method returns an Optional<Expense> then get the given ID in the DB for user access
     public Optional<Expense> insert(Expense expense) {
         var insert = """
                 INSERT INTO expenses (expense_name, expense_desc, expense_date, expense_amount)
@@ -88,6 +87,9 @@ public class ExpenseRepository {
         return read;
     }
 
+    /**
+     * Used to get the list of expenses from given date. Specifically, when everything is provided, such as the year, month, and day.
+     */
     public List<Expense> getExpenseByDate(LocalDate date) {
         var read = new ArrayList<Expense>();
 
@@ -107,6 +109,9 @@ public class ExpenseRepository {
         return read;
     }
 
+    /**
+     * Used to get the list of expenses from given year. Specifically, when year is the only provided information for the filter.
+     */
     public List<Expense> getExpenseByDate(int year) {
         var read = new ArrayList<Expense>();
 
@@ -126,6 +131,9 @@ public class ExpenseRepository {
         return read;
     }
 
+    /**
+     * Used to get the list of expenses from given year and month. Specifically, when year and month is the only provided information for the filter.
+     */
     public List<Expense> getExpenseByDate(int year, int month) {
         var read = new ArrayList<Expense>();
 
