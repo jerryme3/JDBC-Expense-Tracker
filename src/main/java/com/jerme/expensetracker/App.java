@@ -3,10 +3,12 @@ package com.jerme.expensetracker;
 import com.jerme.expensetracker.filecreator.ExpenseFileCreator;
 import com.jerme.expensetracker.models.Expense;
 import com.jerme.expensetracker.repository.ExpenseRepository;
+import com.jerme.expensetracker.repository.GetType;
 import com.jerme.expensetracker.services.ExpenseRepositoryService;
 import com.jerme.expensetracker.utils.ExpenseAuthenticator;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -60,6 +62,8 @@ public class App {
             case 5 -> printAllExpenseByDate();
             case 6 -> createFileForAllExpenses();
             case 7 -> createFileForSpecificTime();
+            case 8 -> viewSummaryForAll();
+            case 9 -> viewSummaryForSpecificTime();
             case 10 -> exit();
             default -> System.out.println("Input " + c + " cannot be resolved!");
         }
@@ -414,31 +418,6 @@ public class App {
 
     }
 
-    private static void print(List<Expense> expenses) {
-        if (expenses.isEmpty()) {
-            System.out.println("Expense list is empty.");
-            return;
-        }
-
-        System.out.println("==========================================================================================================");
-
-        System.out.printf("| %-5s | %-20s | %-40s | %-15s | %-10s |%n",
-                "ID", "Name", "Description", "Date", "Amount");
-
-        System.out.println("----------------------------------------------------------------------------------------------------------");
-
-        for (var exp : expenses) {
-            System.out.printf("| %-5d | %-20s | %-40s | %-15s | %-10.2f |%n",
-                    exp.id(),
-                    exp.name(),
-                    exp.desc(),
-                    exp.date(),
-                    exp.amount());
-        }
-
-        System.out.println("==========================================================================================================");
-    }
-
     public void createFileForAllExpenses() {
         boolean fileCreated = ExpenseFileCreator.createExpenseForAll(EXPENSE_REPOSITORY.getExpenses());
 
@@ -550,6 +529,114 @@ public class App {
         System.out.println(fileCreated ? "File has been created successfully!" : "An unexpected error occurred.");
     }
 
+    public void viewSummaryForAll() {
+        int lineCount = 35;
+
+        System.out.println("\n" + "=".repeat(lineCount));
+        System.out.println("|" + " ".repeat(13) + "SUMMARY" + " ".repeat(13) + "|");
+        System.out.println("-".repeat(lineCount));
+        System.out.printf( "|%-20s|%-12.2f|%n", "Sum of Spending", EXPENSE_REPOSITORY.getSummaryForAllExpenses(GetType.SUM));
+        System.out.println("-".repeat(lineCount));
+        System.out.printf( "|%-20s|%-12.2f|%n", "Average Spending", EXPENSE_REPOSITORY.getSummaryForAllExpenses(GetType.AVG));
+        System.out.println("-".repeat(lineCount));
+        System.out.printf( "|%-20s|%-12.2f|%n", "Minimum Spending", EXPENSE_REPOSITORY.getSummaryForAllExpenses(GetType.MIN));
+        System.out.println("-".repeat(lineCount));
+        System.out.printf( "|%-20s|%-12.2f|%n", "Maximum Spending", EXPENSE_REPOSITORY.getSummaryForAllExpenses(GetType.MAX));
+        System.out.println("=".repeat(lineCount));
+    }
+
+    public void viewSummaryForSpecificTime() {
+        String year;
+        String month;
+        String day;
+
+        System.out.println("\nEnter \"break\" to exit.");
+        System.out.println("\nEnter \"get_it\" to stop and get the summary immediately.");
+        do {
+            System.out.print("Enter year here: ");
+            year = IN.nextLine();
+
+            if (wantBreak(year)) return;
+            else if (wantGet(year)) System.out.println("Can't get summary when there is no given filter information.");
+            else if (!ExpenseAuthenticator.isProperYear(year)) ERP.printYearError(year);
+
+        } while (!ExpenseAuthenticator.isProperYear(year));
+
+        int intYear = Integer.parseInt(year);
+
+        do {
+            System.out.print("Enter month here: ");
+            month = IN.nextLine();
+
+            if (wantBreak(month)) return;
+            else if (wantGet(month)) {
+                double[] summary = {
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, GetType.SUM),
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, GetType.AVG),
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, GetType.MIN),
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, GetType.MAX)
+                };
+
+                if (Arrays.stream(summary).anyMatch(s -> s == -1)) {
+                    System.out.println("No summary for this timeframe.");
+                    return;
+                }
+
+                printSummary(EXPENSE_REPOSITORY.getExpenseByDate(intYear), summary);
+                return;
+            }
+            else if (!ExpenseAuthenticator.isProperMonth(year, month)) ERP.printMonthError(year, month);
+
+        } while (!ExpenseAuthenticator.isProperMonth(year, month));
+
+        int intMonth = Integer.parseInt(month);
+
+        do {
+            System.out.print("Enter day here: ");
+            day = IN.nextLine();
+
+            if (wantBreak(day)) return;
+            else if (wantGet(day)) {
+                double[] summary = {
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, intMonth, GetType.SUM),
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, intMonth, GetType.AVG),
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, intMonth, GetType.MIN),
+                        EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(intYear, intMonth, GetType.MAX)
+                };
+
+                if (Arrays.stream(summary).anyMatch(s -> s == -1)) {
+                    System.out.println("No summary for this timeframe.");
+                    return;
+                }
+
+                printSummary(EXPENSE_REPOSITORY.getExpenseByDate(intYear, intMonth), summary);
+                return;
+            }
+            else if (!ExpenseAuthenticator.isProperDayFromAMonth(year, month, day)) ERP.printDayError(year, month, day);
+
+        } while (!ExpenseAuthenticator.isProperDayFromAMonth(year, month, day));
+
+        if (month.length() == 1) month = "0" + month;
+        if (day.length()   == 1) day   = "0" + month;
+
+        var date = LocalDate.parse(year + "-" + month + "-" + day);
+
+        double[] summary = {
+                EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(date, GetType.SUM),
+                EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(date, GetType.AVG),
+                EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(date, GetType.MIN),
+                EXPENSE_REPOSITORY.getSummaryForSpecificTimeExpense(date, GetType.MAX)
+        };
+
+        if (Arrays.stream(summary).anyMatch(s -> s == -1)) {
+            System.out.println("No summary for this timeframe.");
+            return;
+        }
+
+        printSummary(EXPENSE_REPOSITORY.getExpenseByDate(date), summary);
+
+    }
+
     private static boolean wantBreak(String breakState) {
         return breakState.equalsIgnoreCase("break");
     }
@@ -560,6 +647,44 @@ public class App {
 
     private static boolean wantCreate(String createState) {
         return createState.equalsIgnoreCase("create");
+    }
+
+    private static void print(List<Expense> expenses) {
+        if (expenses.isEmpty()) {
+            System.out.println("Expense list is empty.");
+            return;
+        }
+
+        System.out.println("==========================================================================================================");
+
+        System.out.printf("| %-5s | %-20s | %-40s | %-15s | %-10s |%n",
+                "ID", "Name", "Description", "Date", "Amount");
+
+        System.out.println("----------------------------------------------------------------------------------------------------------");
+
+        for (var exp : expenses) {
+            System.out.printf("| %-5d | %-20s | %-40s | %-15s | %-10.2f |%n",
+                    exp.id(),
+                    exp.name(),
+                    exp.desc(),
+                    exp.date(),
+                    exp.amount());
+        }
+
+        System.out.println("==========================================================================================================");
+    }
+
+    private static void printSummary(List<Expense> expenses, double[] summary) {
+        print(expenses);
+
+        System.out.printf("| %-89s | %-11.2f|%n", "Sum of all expense", summary[0]);
+        System.out.println("----------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-89s | %-11.2f|%n", "Average Spending", summary[1]);
+        System.out.println("----------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-89s | %-11.2f|%n", "Minimum Spending", summary[2]);
+        System.out.println("----------------------------------------------------------------------------------------------------------");
+        System.out.printf("| %-89s | %-11.2f|%n", "Maximum Spending", summary[3]);
+        System.out.println("==========================================================================================================");
     }
 
     public void exit() {

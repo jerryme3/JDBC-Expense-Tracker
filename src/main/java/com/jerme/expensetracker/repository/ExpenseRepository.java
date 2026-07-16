@@ -26,11 +26,11 @@ public class ExpenseRepository {
             ps.setDate(3, Date.valueOf(expense.date()));
             ps.setDouble(4, expense.amount());
 
-            boolean inserted = ps.executeUpdate() > 0;
+            if (ps.executeUpdate() > 0) return Optional.empty();
 
             try (var generatedKey = ps.getGeneratedKeys()) {
                 if (generatedKey.next())
-                    return inserted ? Optional.of(
+                    return Optional.of(
                         new Expense(
                             generatedKey.getLong(1),
                             expense.name(),
@@ -38,7 +38,7 @@ public class ExpenseRepository {
                             expense.date(),
                             expense.amount()
                         )
-                    ) : Optional.empty();
+                    );
             }
 
         } catch (SQLException e) {
@@ -68,7 +68,6 @@ public class ExpenseRepository {
     /**
     * Gets all the existing rows in the table: "expenses" and returns it as a list of expenses in ascending order by date
     */
-
     public List<Expense> getExpenses() {
         var read = new ArrayList<Expense>();
         var readAll = "SELECT * FROM expenses ORDER BY expense_date ASC";
@@ -103,7 +102,7 @@ public class ExpenseRepository {
             }
 
         } catch (SQLException e) {
-            System.err.printf(e.getMessage());
+            System.err.println(e.getMessage());
         }
 
         return read;
@@ -125,7 +124,7 @@ public class ExpenseRepository {
             }
 
         } catch (SQLException e) {
-            System.err.printf(e.getMessage());
+            System.err.println(e.getMessage());
         }
 
         return read;
@@ -152,7 +151,7 @@ public class ExpenseRepository {
             }
 
         } catch (SQLException e) {
-            System.err.printf(e.getMessage());
+            System.err.println(e.getMessage());
         }
 
         return read;
@@ -222,6 +221,108 @@ public class ExpenseRepository {
 
         return Optional.empty();
     }
+
+    public double getSummaryForAllExpenses(GetType getType) {
+        String getSummary = "SELECT " + getType.name() + "(expense_amount) AS result FROM expenses";
+        double summary = 0;
+
+        try (var conn = DatabaseConnection.getConnection();
+        var ps = conn.prepareStatement(getSummary)) {
+
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    summary = rs.getDouble("result");
+
+                    if (rs.wasNull()) {
+                        return -1;
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+
+        return summary;
+    }
+
+    public double getSummaryForSpecificTimeExpense(int year, GetType getType) {
+        String getSummary = "SELECT " + getType.name() + "(expense_amount) AS result FROM expenses WHERE EXTRACT(YEAR FROM expense_date) = ?";
+        double summary = 0;
+
+        try (var conn = DatabaseConnection.getConnection();
+             var ps = conn.prepareStatement(getSummary)) {
+
+            ps.setInt(1, year);
+
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    summary = rs.getDouble("result");
+
+                    if (rs.wasNull()) {
+                        return -1;
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+
+        return summary;
+    }
+
+    public double getSummaryForSpecificTimeExpense(int year, int month, GetType getType) {
+        String getSummary = "SELECT " + getType.name() + """
+                                              (expense_amount) AS result FROM expenses
+                                              WHERE EXTRACT(YEAR FROM expense_date) = ? AND EXTRACT(MONTH FROM expense_date) = ?""";
+        double summary = 0;
+
+        try (var conn = DatabaseConnection.getConnection();
+             var ps = conn.prepareStatement(getSummary)) {
+
+            ps.setInt(1, year);
+            ps.setInt(2, month);
+
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    summary = rs.getDouble("result");
+
+                    if (rs.wasNull()) {
+                        return -1;
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+
+        return summary;
+    }
+
+    public double getSummaryForSpecificTimeExpense(LocalDate date, GetType getType) {
+        String get = "SELECT " + getType.name() + "(expense_amount) AS result FROM expenses WHERE expense_date = ?";
+        double summary = 0;
+
+
+        try (var conn = DatabaseConnection.getConnection();
+        var ps = conn.prepareStatement(get)) {
+            ps.setDate(1, Date.valueOf(date));
+
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) summary = rs.getDouble("result");
+
+                if (rs.wasNull()) return -1;
+            }
+
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+
+        return summary;
+    }
+
 
     public Expense map(ResultSet rs) throws SQLException {
         return new Expense(
